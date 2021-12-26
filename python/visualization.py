@@ -50,8 +50,6 @@ default_eps_parameters = {
         'contour':False,
         'contour_linewidth':1,
         'discrete':False,
-        'discrete_eps_levels':[],
-        'discrete_eps_colors':[],
         'frequency':None,
         'resolution':None
     }
@@ -425,22 +423,14 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     if mp.am_master():
         # Contour plotting
         if eps_parameters['contour']:
-            ax.contour(eps_data, 0, colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
+            ax.contour(eps_data, 0, levels=np.unique(eps_data), colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
         # Discrete color plotting
         elif eps_parameters['discrete']:
-            # Obtain thresholds from provided list of indices to plot
-            if len(eps_parameters['discrete_eps_levels']) == 0: # understands both list and numpy array
-                eps_parameters['discrete_eps_levels'] = [np.min(eps_data), np.max(eps_data)]
-            eps_parameters['discrete_eps_levels'], thresholds = threshold_eps(eps_parameters['discrete_eps_levels'], tol=1E-6)
-            # Generate color mapping to levels
-            if len(eps_parameters['discrete_eps_colors']) == 0: # understands both list and numpy array
-                from matplotlib.cm import get_cmap
-                colors = get_cmap(eps_parameters['cmap'])(np.linspace(0,1,len(eps_parameters['discrete_eps_levels'])))
-                norm, eps_parameters['cmap'] = threshold_colors(eps_parameters['discrete_eps_levels'], thresholds, colors)
-            else:
-                assert len(eps_parameters['discrete_eps_colors']) >= len(eps_parameters['discrete_eps_levels'])
-                norm, eps_parameters['cmap'] = threshold_colors(eps_parameters['discrete_eps_levels'], thresholds, eps_parameters['discrete_eps_colors'])
-            # Plots data with discrete color levels
+            from matplotlib.cm import get_cmap
+            levels=np.unique(eps_data)
+            thresholds = threshold_eps(eps_parameters['discrete_eps_levels'], tol=1E-6)
+            colors = get_cmap(eps_parameters['cmap'])(np.linspace(0,1,len(levels)))
+            norm, eps_parameters['cmap'] = threshold_colors(levels, thresholds, colors)
             ax.imshow(eps_data, extent=extent, norm=norm, **filter_dict(eps_parameters, ax.imshow))
         # Continuous color plotting
         else:
